@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">demo_svrc</string>
+    <string name="AVD_record">服务器录制</string>
+    <string name="AVD_record_des">\t\t\t\t录制成mp4 webm文件，从服务器下载文件切播放\n请参考类AVDRecordActivity</string>
+    <string name="AVD_record_intent_str">进入服务器录制界面</string>
+    <string name="AVD_live">服务器旁路直播</string>
+    <string name="AVD_live_des">\t\t\t\t旁路直播当前用户音视频，生产直播二维码和链接copy\n请参考类AVDLiveActivity</string>
+    <string name="AVD_live_intent_str">进入服务器旁路直播界面</string>
+    <string name="AVD_outgoing">服务器外呼rtsp/323设备</string>
+    <string name="AVD_outgoing_des">\t\t\t\t外呼ipc, 外呼323设备，在本客户端显示视频\n请参考类AVDOutgoingActivity</string>
+    <string name="AVD_outgoing_intent_str">进入服务器外呼界面</string>
+</resources>
