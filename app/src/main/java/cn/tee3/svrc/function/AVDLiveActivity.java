@@ -4,10 +4,10 @@ import android.app.Activity;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -28,7 +28,6 @@ import cn.tee3.svrc.R;
 import cn.tee3.svrc.SvrcApp;
 import cn.tee3.svrc.adapter.CamerasAdapter;
 import cn.tee3.svrc.avroom.AVRoom;
-import cn.tee3.svrc.utils.AppKey;
 import cn.tee3.svrc.utils.StringUtils;
 import cn.tee3.svrc.view.EventLogView;
 import cn.tee3.svrc.view.SvrcDialog;
@@ -44,6 +43,7 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
     private TextView tvFunction;//开始直播/停止直播
     private TextView tvHlsUrl;//HlsUrl链接
     private TextView tvRtmpUrl;//RtmpUrl链接
+    private TextView tvShowLive;//查看直播
     private EventLogView logView;
     private ListView lvCameras;
     private RadioGroup rgAudioSelect;//rb_audio_no无音频;rb_audio_one仅所选中视频用户的音频;rb_audio_without_me房间内除自己外的音频;rb_audio_all房间所有音频
@@ -63,6 +63,7 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
     private String liveId = "";//正在直播的id
     private String HlsUrlStr = "";
     private String RtmpUrlStr = "";
+    private String playHlsurl = "";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -79,6 +80,7 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
         tvFunction = (TextView) findViewById(R.id.tv_function);
         tvHlsUrl = (TextView) findViewById(R.id.tv_hls);
         tvRtmpUrl = (TextView) findViewById(R.id.tv_rtmp);
+        tvShowLive = (TextView) findViewById(R.id.tv_show_live);
         logView = (EventLogView) findViewById(R.id.event_view);
         lvCameras = (ListView) findViewById(R.id.lv_cameras);
         rgAudioSelect = (RadioGroup) findViewById(R.id.rg_audio_select);
@@ -86,11 +88,14 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
         tvFunction.setOnClickListener(this);
         tvHlsUrl.setOnClickListener(this);
         tvRtmpUrl.setOnClickListener(this);
+        tvShowLive.setOnClickListener(this);
         lvCameras.setOnItemClickListener(this);
         rgAudioSelect.setOnCheckedChangeListener(this);
 
+        tvFunction.setText("开始直播");
         tvHlsUrl.setText("Hls链接");
         tvRtmpUrl.setText("Rtmp链接");
+        tvShowLive.setText("查看直播");
 
         //设置回调
         avdLive = AVDLive.instance();
@@ -181,6 +186,9 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
             case R.id.tv_hls:
                 SvrcDialog.HlsImgDialog(AVDLiveActivity.this, HlsUrlStr);
                 break;
+            case R.id.tv_show_live:
+                SvrcDialog.PlayLiveDialog(AVDLiveActivity.this, playHlsurl);
+                break;
             default:
                 break;
         }
@@ -191,8 +199,8 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
      */
     private void startLive() {
         String userId = mRoom.mvideo.getOwnerId(Constants.SELECT_CAMERA_ID);
-        if(userId==null){
-            userId="testuserId";
+        if (userId == null) {
+            userId = "testuserId";
         }
         AVDLive.LiveInfo liveInfo = new AVDLive.LiveInfo();
         liveInfo.setAudioType(audioType);
@@ -202,9 +210,9 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
         liveInfo.setUserId(userId);
         liveInfo.setRoomId(roomId);
         //以下三个url可以不传，服务端会返回；如果需要pub到指定路径则三个url必须全部都设置
-        liveInfo.setPublishurl("rtmp://publish.3tee.com.cn/ucloud/" + mRoom.mvideo.getUserName(userId));
-        liveInfo.setHlsurl("http://hls.3tee.com.cn/ucloud/" + mRoom.mvideo.getUserName(userId) + "/playlist.m3u8");
-        liveInfo.setRtmphurl("rtmp://rtmp.3tee.com.cn/ucloud/" + mRoom.mvideo.getUserName(userId));
+        liveInfo.setPublishurl(Constants.DEMO_PARAMS.getOption().getPublishurl().replace("$livename", mRoom.mvideo.getUserName(userId)));
+        liveInfo.setHlsurl(Constants.DEMO_PARAMS.getOption().getHlsurl().replace("$livename", mRoom.mvideo.getUserName(userId)));
+        liveInfo.setRtmphurl(Constants.DEMO_PARAMS.getOption().getRtmpurl().replace("$livename", mRoom.mvideo.getUserName(userId)));
         int ret = avdLive.createUserLive(liveInfo);
         if (ErrorCode.AVD_OK != ret) {
             logView.addVeryImportantLog("创建直播失败 ErrorCode:" + ret);
@@ -233,6 +241,27 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
             Constants.SELECT_CAMERA_ID = "";
         }
         Log.i(TAG, "onDestory");
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // 退出
+        if (event.getAction() == KeyEvent.ACTION_DOWN
+                && KeyEvent.KEYCODE_BACK == keyCode) {
+            if (isLive) {
+                SvrcDialog.finishDialog(this, "正在直播,是否直接退出？", new SvrcDialog.MCallBack() {
+                    @Override
+                    public boolean OnCallBackDispath(Boolean bSucceed) {
+                        finish();
+                        return false;
+                    }
+                });
+            } else {
+                finish();
+            }
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     @Override
@@ -311,8 +340,11 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
             logView.addImportantLog("开始直播");
             tvRtmpUrl.setVisibility(View.VISIBLE);
             tvHlsUrl.setVisibility(View.VISIBLE);
-            RtmpUrlStr = AppKey.urlbase + "admin/live/rtmpPlayer.html?src=" + info.getRtmpurl();
-            HlsUrlStr = AppKey.urlbase + "/admin/live/qrcode.html?src=" + AppKey.urlbase + "/admin/live/hlsPlayer.html?src=" + info.getHlsurl();
+            tvShowLive.setVisibility(View.VISIBLE);
+            RtmpUrlStr = "https://3tee.cn/admin/live/rtmpPlayer.html?src=" + info.getRtmpurl();
+            HlsUrlStr = "https://3tee.cn//admin/live/qrcode.html?src=https://3tee.cn//admin/live/hlsPlayer.html?src=" + info.getHlsurl();
+
+            playHlsurl = info.getHlsurl();
             SvrcDialog.PlayLiveDialog(AVDLiveActivity.this, info.getHlsurl());
         }
         Log.i(TAG, "onCreateUserLive: ret=" + result + "\nHlsurl:" + info.getHlsurl() +
@@ -337,6 +369,7 @@ public class AVDLiveActivity extends Activity implements View.OnClickListener, A
     @Override
     public void onDeleteLive(int result, String liveId) {
         tvRtmpUrl.setVisibility(View.GONE);
+        tvShowLive.setVisibility(View.GONE);
         tvHlsUrl.setVisibility(View.GONE);
         if (ErrorCode.AVD_OK != result) {
             logView.addVeryImportantLog("停止直播失败 ErrorCode:" + result);

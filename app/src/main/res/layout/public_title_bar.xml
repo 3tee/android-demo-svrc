@@ -44,6 +44,7 @@
             android:background="@null"
             android:gravity="center_vertical"
             android:hint="房间号：r2"
+            android:maxLength="6"
             android:singleLine="true"
             android:text=""
             android:textColor="#cc0000"

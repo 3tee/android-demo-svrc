@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -29,7 +30,9 @@ import cn.tee3.svrc.SvrcApp;
 import cn.tee3.svrc.adapter.CamerasAdapter;
 import cn.tee3.svrc.avroom.AVRoom;
 import cn.tee3.svrc.utils.StringUtils;
+import cn.tee3.svrc.utils.TimerUtils;
 import cn.tee3.svrc.view.EventLogView;
+import cn.tee3.svrc.view.SvrcDialog;
 
 /**
  * 服务器录制
@@ -46,11 +49,13 @@ public class AVDRecordActivity extends Activity implements View.OnClickListener,
     private ListView lvCameras;
     private RadioGroup rgAudioSelect;//rb_audio_no无音频;rb_audio_one仅所选中视频用户的音频;rb_audio_without_me房间内除自己外的音频;rb_audio_all房间所有音频
     private View transView;
+    private TextView tvRecordTime;
 
     private AVDRecord avdRecord;
     private AVRoom mRoom;
     private List<MVideo.Camera> mPublishedCameras;//视频摄像头信息列表
     private CamerasAdapter cAdapter;
+    private TimerUtils mTimerUtils;
 
     private String roomId;
     private boolean isRecord = false;
@@ -80,6 +85,9 @@ public class AVDRecordActivity extends Activity implements View.OnClickListener,
         logView = (EventLogView) findViewById(R.id.event_view);
         lvCameras = (ListView) findViewById(R.id.lv_cameras);
         rgAudioSelect = (RadioGroup) findViewById(R.id.rg_audio_select);
+        tvRecordTime = (TextView) findViewById(R.id.tv_record_time);
+
+        tvRecordTime.setVisibility(View.VISIBLE);
 
         tvFunction.setOnClickListener(this);
         tvCopyRecordUrl.setOnClickListener(this);
@@ -87,12 +95,15 @@ public class AVDRecordActivity extends Activity implements View.OnClickListener,
         lvCameras.setOnItemClickListener(this);
         rgAudioSelect.setOnCheckedChangeListener(this);
 
+        tvFunction.setText("开始录制");
         tvCopyRecordUrl.setText("复制文件路径");
         tvPlayRecordUrl.setText("播放文件");
 
         //设置回调
         avdRecord = AVDRecord.instance();
         avdRecord.setListener(this);
+
+        mTimerUtils = new TimerUtils(tvRecordTime);
 
         startUpVideo(roomId);//加入房间
     }
@@ -153,6 +164,7 @@ public class AVDRecordActivity extends Activity implements View.OnClickListener,
                     if (isRecord) {
                         //停止录制
                         tvFunction.setText("开始录制");
+                        mTimerUtils.clearTimer();//定时器清除
                         transView.setBackgroundColor(getResources().getColor(R.color.transparent));
                         enableRadioGroup(rgAudioSelect);
                         lvCameras.setEnabled(true);
@@ -161,6 +173,7 @@ public class AVDRecordActivity extends Activity implements View.OnClickListener,
                     } else {
                         //开始录制
                         tvFunction.setText("停止录制");
+                        mTimerUtils.updateTimer();//开始计时
                         transView.setBackgroundColor(getResources().getColor(R.color.transparent_40));
                         disableRadioGroup(rgAudioSelect);
                         lvCameras.setEnabled(false);
@@ -189,8 +202,8 @@ public class AVDRecordActivity extends Activity implements View.OnClickListener,
      */
     private void startRecord() {
         String userId = mRoom.mvideo.getOwnerId(Constants.SELECT_CAMERA_ID);
-        if(userId==null){
-            userId="testuserId";
+        if (userId == null) {
+            userId = "testuserId";
         }
         AVDRecord.RecordInfo recordInfo = new AVDRecord.RecordInfo();
         recordInfo.setAudioType(audioType);
@@ -228,6 +241,27 @@ public class AVDRecordActivity extends Activity implements View.OnClickListener,
             Constants.SELECT_CAMERA_ID = "";
         }
         Log.i(TAG, "onDestory");
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // 退出
+        if (event.getAction() == KeyEvent.ACTION_DOWN
+                && KeyEvent.KEYCODE_BACK == keyCode) {
+            if (isRecord) {
+                SvrcDialog.finishDialog(this, "正在录制,是否直接退出？", new SvrcDialog.MCallBack() {
+                    @Override
+                    public boolean OnCallBackDispath(Boolean bSucceed) {
+                        finish();
+                        return false;
+                    }
+                });
+            } else {
+                finish();
+            }
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     @Override

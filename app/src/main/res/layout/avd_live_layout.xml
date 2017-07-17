@@ -45,8 +45,19 @@
                 android:background="@drawable/round_corner_blue"
                 android:gravity="center"
                 android:padding="15dp"
-                android:text="开始直播"
+                android:text=""
                 android:textColor="#ffffff" />
+
+            <TextView
+                android:id="@+id/tv_record_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="8dp"
+                android:background="@android:color/transparent"
+                android:text="录制时长 00:00:00"
+                android:visibility="gone"
+                android:textColor="@android:color/holo_red_light" />
 
             <TextView
                 android:id="@+id/tv_hls"
@@ -65,6 +76,21 @@
 
             <TextView
                 android:id="@+id/tv_rtmp"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/round_corner_blue"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text=""
+                android:textColor="#ffffff"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tv_show_live"
                 android:layout_width="80dp"
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"

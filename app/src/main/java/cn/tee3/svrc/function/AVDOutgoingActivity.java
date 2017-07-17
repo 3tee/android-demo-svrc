@@ -6,6 +6,7 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
@@ -29,6 +30,7 @@ import cn.tee3.svrc.avroom.AVRoom;
 import cn.tee3.svrc.utils.AppKey;
 import cn.tee3.svrc.view.EventLogView;
 import cn.tee3.svrc.utils.StringUtils;
+import cn.tee3.svrc.view.SvrcDialog;
 
 /**
  * 服务器外呼设备（rtsp/323）等
@@ -217,13 +219,13 @@ public class AVDOutgoingActivity extends Activity implements View.OnClickListene
     private void startOutgoing() {
         //创建外呼设备
         userId = "og" + (int) (Math.random() * 100000000);//8位的随机数的随机数
-        String userName = setOutgoingUserName(AppKey.main_rtsp_uri);
+        String userName = setOutgoingUserName(Constants.DEMO_PARAMS.getOption().getUserAddress());
         User user = new User(userId, userName, "outgoing");
         int ret;
         if (cbAddSubStream.isChecked()) {//是否导入子码流
-            ret = avdOutgoing.createOutgoingUser(roomId, user, AppKey.main_rtsp_uri, "admin", "Hik12345", AppKey.sub_rtsp_uri);
+            ret = avdOutgoing.createOutgoingUser(roomId, user, Constants.DEMO_PARAMS.getOption().getUserAddress(), Constants.DEMO_PARAMS.getOption().getLogin_name(), Constants.DEMO_PARAMS.getOption().getLogin_password(), Constants.DEMO_PARAMS.getOption().getSub_rtsp_uri());
         } else {
-            ret = avdOutgoing.createOutgoingUser(roomId, user, AppKey.main_rtsp_uri, "admin", "Hik12345", "");
+            ret = avdOutgoing.createOutgoingUser(roomId, user, Constants.DEMO_PARAMS.getOption().getUserAddress(), Constants.DEMO_PARAMS.getOption().getLogin_name(), Constants.DEMO_PARAMS.getOption().getLogin_password(), "");
         }
         if (ret != 0) {
             Log.e(TAG, "createOutgoingUser ret:" + ret);
@@ -236,7 +238,7 @@ public class AVDOutgoingActivity extends Activity implements View.OnClickListene
      */
     private void stopOutgoing() {
         //去除外呼设备
-        int ret = avdOutgoing.destoryOutgoingUser(roomId, userId, AppKey.main_rtsp_uri);
+        int ret = avdOutgoing.destoryOutgoingUser(roomId, userId, Constants.DEMO_PARAMS.getOption().getUserAddress());
         if (ret != 0) {
             Log.e(TAG, "destoryOutgoingUser ret:" + ret);
             logView.addVeryImportantLog("去除外呼设备失败 ErrorCode:" + ret);
@@ -251,6 +253,27 @@ public class AVDOutgoingActivity extends Activity implements View.OnClickListene
             mRoom.dispose();
             Log.i(TAG, "onDestory");
         }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // 退出
+        if (event.getAction() == KeyEvent.ACTION_DOWN
+                && KeyEvent.KEYCODE_BACK == keyCode) {
+            if (isImport) {
+                SvrcDialog.finishDialog(this, "正在外呼,是否直接退出？", new SvrcDialog.MCallBack() {
+                    @Override
+                    public boolean OnCallBackDispath(Boolean bSucceed) {
+                        finish();
+                        return false;
+                    }
+                });
+            } else {
+                finish();
+            }
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     /************************************************** AVDOutgoing.Listener********************************************************/

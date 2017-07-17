@@ -13,4 +13,5 @@ public class StringUtils {
     public static boolean isNotEmpty(String string) {
         return null != string && string.length() > 0 && !"".equals(string);
     }
+
 }

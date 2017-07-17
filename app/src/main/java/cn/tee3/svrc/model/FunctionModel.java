@@ -20,6 +20,15 @@ public class FunctionModel {
     private String describe;
     private Activity mActivity;
     private String intentStr;
+    private String appType;
+
+    public String getAppType() {
+        return appType;
+    }
+
+    public void setAppType(String appType) {
+        this.appType = appType;
+    }
 
     public String getIntentStr() {
         return intentStr;
