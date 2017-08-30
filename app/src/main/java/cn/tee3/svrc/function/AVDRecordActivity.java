@@ -126,7 +126,7 @@ public class AVDRecordActivity extends Activity implements View.OnClickListener,
                 }
             }
         });
-        int ret = mRoom.join("testuserId", "test_username", new Room.JoinResultListener() {
+        int ret = mRoom.join(StringUtils.getUUID(), "androidUser" + (int) (Math.random() * 100000000), new Room.JoinResultListener() {
             @Override
             public void onJoinResult(int result) {
                 if (ErrorCode.AVD_OK != result) {
